@@ -30,7 +30,7 @@
 </p>
 
 <p align="center">
-  <img src="./assets/ecuador-map.png" width="300" alt="Mapa Ecuador" />
+  <img src="./assets/ecuador-world-map.webp" width="700" alt="Ecuador resaltado en mapa mundial" />
 </p>
 
 ---
