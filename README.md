@@ -1,10 +1,10 @@
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:2563eb,100:38bdf8&height=210&section=header&text=Ariel%20Solano%20Rivera&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Computer%20Science%20Student%20%7C%20Backend%20%7C%20IA%20%7C%20Computer%20Vision&descAlignY=62&descSize=17" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:2563eb,100:38bdf8&height=210&section=header&text=Ariel%20Solano%20Rivera&fontSize=48&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Computer%20Science%20Student%20%7C%20Frontend%20%7C%20Backend%20%7C%20IA%20%7C%20Computer%20Vision&descAlignY=62&descSize=17" />
 </p>
 
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=22&duration=2500&pause=1000&color=38BDF8&center=true&vCenter=true&width=720&lines=Estudiante+de+Computaci%C3%B3n;Desarrollo+Web+%7C+Backend+%7C+Bases+de+Datos;Visi%C3%B3n+por+Computador+con+OpenCV" />
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=22&duration=2500&pause=1000&color=38BDF8&center=true&vCenter=true&width=720&lines=Estudiante+de+Computaci%C3%B3n;Desarrollo+Web+%7C+Frontend+%7C+Backend+%7C+Bases+de+Datos;Visi%C3%B3n+por+Computador" />
 </p>
 
 
@@ -18,11 +18,6 @@
 <p align="center">
   Soy <strong>Ariel Solano</strong>, estudiante de la carrera de <strong>Computación</strong> en la
   <strong>Universidad Politécnica Salesiana, sede Cuenca</strong>.
-</p>
-
-<p align="center">
-  Me enfoco en el desarrollo de software, sistemas backend, bases de datos,
-  inteligencia artificial, visión por computador y soluciones tecnológicas aplicadas a problemas reales.
 </p>
 
 <p align="center">
@@ -41,7 +36,7 @@
 
 <p align="center">
   Estas son algunas de las tecnologías y herramientas que he utilizado en proyectos académicos,
-  desarrollo web, backend, bases de datos, machine learning y visión por computador.
+  desarrollo web, frontend, backend, bases de datos, machine learning y visión por computador.
 </p>
 
 <p align="center">
