@@ -30,7 +30,7 @@
 </p>
 
 <p align="center">
-  <img src="./assets/ecuador-map.svg" width="300" alt="Mapa de Ecuador resaltado" />
+  <img src="./assets/ecuador-map.png" width="300" alt="Mapa Ecuador" />
 </p>
 
 ---
