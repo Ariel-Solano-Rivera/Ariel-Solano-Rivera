@@ -4,7 +4,9 @@ Este proyecto genera automáticamente el panel profesional (`light.svg` y `dark.
 
 ## 1. Personalizar los datos
 
-Edita únicamente `profile.config.json`. Allí puedes cambiar nombre, usuario, rol, ubicación, formación, estado, áreas de enfoque, tecnologías, contactos y color de acento.
+Edita `profile.config.json` para cambiar nombre, usuario, rol, ubicación, formación, estado, áreas de enfoque, tecnologías y contactos. Los colores principales de cada tema se controlan con `accentLight` y `accentDark`.
+
+El retrato está en `assets/pixel-avatar.png` y su ruta se define mediante la propiedad `avatar`. Puedes reemplazarlo por otro PNG cuadrado conservando el mismo nombre.
 
 Mantén la estructura JSON y las comillas dobles. Si agregas tecnologías, procura usar nombres breves para conservar el diseño. Los enlaces de contacto deben incluir `https://` o `mailto:`.
 
@@ -69,4 +71,3 @@ Selecciona **Read and write permissions** y guarda los cambios. La acción ya de
 4. Cuando termine, la acción habrá consultado tus contribuciones reales y guardado los SVG actualizados.
 
 Después se ejecutará diariamente y también cuando cambien la configuración o los generadores.
-

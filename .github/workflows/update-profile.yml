@@ -7,6 +7,7 @@ on:
   push:
     paths:
       - "profile.config.json"
+      - "assets/pixel-avatar.png"
       - "scripts/generate-profile.mjs"
       - "scripts/generate-heatmap.mjs"
       - "package.json"
@@ -38,4 +39,3 @@ jobs:
         with:
           commit_message: "chore: update profile artwork"
           file_pattern: "light.svg dark.svg dist/github-jet.svg"
-

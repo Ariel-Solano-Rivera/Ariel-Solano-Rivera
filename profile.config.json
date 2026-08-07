@@ -1,6 +1,7 @@
 {
   "name": "Ariel Solano Rivera",
   "username": "Ariel-Solano-Rivera",
+  "avatar": "assets/pixel-avatar.png",
   "role": "Estudiante de Computación · Software Developer",
   "location": "Cuenca, Ecuador",
   "education": "Universidad Politécnica Salesiana · Computación",
@@ -46,6 +47,7 @@
       "url": "https://www.instagram.com/arielsol_30"
     }
   ],
-  "accent": "#22d3ee"
+  "accent": "#22d3ee",
+  "accentLight": "#087ea4",
+  "accentDark": "#2dd4e8"
 }
-
