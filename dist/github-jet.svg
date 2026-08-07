@@ -629,11 +629,11 @@
 <rect x="700" y="171" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
         <title>2026-05-04: 0 contribuciones</title>
       </rect>
-<rect x="700" y="192" width="15" height="15" rx="3" fill="#10b9b0" opacity="1">
-        <title>2026-05-05: 4 contribuciones</title>
+<rect x="700" y="192" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
+        <title>2026-05-05: 0 contribuciones</title>
       </rect>
-<rect x="700" y="213" width="15" height="15" rx="3" fill="#67f5d2" opacity="1">
-        <title>2026-05-06: 18 contribuciones</title>
+<rect x="700" y="213" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
+        <title>2026-05-06: 0 contribuciones</title>
       </rect>
 <rect x="700" y="234" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
         <title>2026-05-07: 0 contribuciones</title>
@@ -731,7 +731,7 @@
 <rect x="805" y="150" width="15" height="15" rx="3" fill="#67f5d2" opacity="1">
         <title>2026-06-07: 10 contribuciones</title>
       </rect>
-<rect x="805" y="171" width="15" height="15" rx="3" fill="#123f4c" opacity="1">
+<rect x="805" y="171" width="15" height="15" rx="3" fill="#087f8c" opacity="1">
         <title>2026-06-08: 1 contribuciones</title>
       </rect>
 <rect x="805" y="192" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
@@ -767,7 +767,7 @@
 <rect x="826" y="255" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
         <title>2026-06-19: 0 contribuciones</title>
       </rect>
-<rect x="826" y="276" width="15" height="15" rx="3" fill="#10b9b0" opacity="1">
+<rect x="826" y="276" width="15" height="15" rx="3" fill="#67f5d2" opacity="1">
         <title>2026-06-20: 4 contribuciones</title>
       </rect>
 <rect x="847" y="150" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
@@ -851,8 +851,8 @@
 <rect x="910" y="255" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
         <title>2026-07-17: 0 contribuciones</title>
       </rect>
-<rect x="910" y="276" width="15" height="15" rx="3" fill="#087f8c" opacity="1">
-        <title>2026-07-18: 2 contribuciones</title>
+<rect x="910" y="276" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
+        <title>2026-07-18: 0 contribuciones</title>
       </rect>
 <rect x="931" y="150" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
         <title>2026-07-19: 0 contribuciones</title>
@@ -878,7 +878,7 @@
 <rect x="952" y="150" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
         <title>2026-07-26: 0 contribuciones</title>
       </rect>
-<rect x="952" y="171" width="15" height="15" rx="3" fill="#123f4c" opacity="1">
+<rect x="952" y="171" width="15" height="15" rx="3" fill="#087f8c" opacity="1">
         <title>2026-07-27: 1 contribuciones</title>
       </rect>
 <rect x="952" y="192" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
@@ -908,16 +908,16 @@
 <rect x="973" y="213" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
         <title>2026-08-05: 0 contribuciones</title>
       </rect>
-<rect x="973" y="234" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
-        <title>2026-08-06: 0 contribuciones</title>
+<rect x="973" y="234" width="15" height="15" rx="3" fill="#10b9b0" opacity="1">
+        <title>2026-08-06: 3 contribuciones</title>
       </rect>
-<rect x="973" y="255" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
-        <title>2026-08-07: 0 contribuciones</title>
+<rect x="973" y="255" width="15" height="15" rx="3" fill="#087f8c" opacity="1">
+        <title>2026-08-07: 1 contribuciones</title>
       </rect>
 <rect x="973" y="276" width="15" height="15" rx="3" fill="#132333" opacity="0.68">
         <title>week-40-day-7: 0 contribuciones</title>
       </rect></g>
-  <g><rect x="697" y="210" width="21" height="21" rx="6" class="hotspot" fill="none" stroke="#f7d154" stroke-width="2"/></g>
+  <g><rect x="802" y="147" width="21" height="21" rx="6" class="hotspot" fill="none" stroke="#f7d154" stroke-width="2"/></g>
 
   <g class="flight" filter="url(#droneGlow)">
     <path d="M0 16 L0 54 L46 54 L46 16 Z" fill="url(#beam)"/>
@@ -931,9 +931,9 @@
 
   <g transform="translate(45 376)">
     <text y="17" class="meta">TOTAL / 40 WEEKS</text>
-    <text x="148" y="17" class="stat">47</text>
+    <text x="148" y="17" class="stat">27</text>
     <text x="250" y="17" class="meta">PEAK DAY</text>
-    <text x="329" y="17" class="stat">18</text>
+    <text x="329" y="17" class="stat">10</text>
     <text x="405" y="17" class="meta">SOURCE</text>
     <text x="465" y="17" class="stat">GitHub GraphQL API</text>
   </g>
