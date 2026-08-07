@@ -1,0 +1,51 @@
+{
+  "name": "Ariel Solano Rivera",
+  "username": "Ariel-Solano-Rivera",
+  "role": "Estudiante de Computación · Software Developer",
+  "location": "Cuenca, Ecuador",
+  "education": "Universidad Politécnica Salesiana · Computación",
+  "status": "Construyendo soluciones que conectan software, datos e inteligencia artificial.",
+  "focus": [
+    "Backend & APIs",
+    "Inteligencia Artificial",
+    "Visión por Computador",
+    "Sistemas Full-Stack"
+  ],
+  "technologies": [
+    {
+      "category": "LANGUAGES",
+      "items": ["Python", "JavaScript", "TypeScript", "Java", "C++"]
+    },
+    {
+      "category": "WEB & BACKEND",
+      "items": ["React", "Node.js", "HTML", "CSS", "REST APIs"]
+    },
+    {
+      "category": "DATA & AI",
+      "items": ["PostgreSQL", "OpenCV", "MLflow", "Machine Learning"]
+    },
+    {
+      "category": "TOOLS & CLOUD",
+      "items": ["Docker", "Git", "VS Code", "Azure", "ESP32-CAM"]
+    }
+  ],
+  "contacts": [
+    {
+      "label": "GITHUB",
+      "value": "@Ariel-Solano-Rivera",
+      "url": "https://github.com/Ariel-Solano-Rivera"
+    },
+    {
+      "label": "EMAIL",
+      "value": "arisolri1@gmail.com",
+      "url": "mailto:arisolri1@gmail.com"
+    },
+    {
+      "label": "INSTAGRAM",
+      "value": "@arielsol_30",
+      "url": "https://www.instagram.com/arielsol_30"
+    }
+  ],
+  "accent": "#22d3ee"
+}
+

@@ -1,0 +1,41 @@
+name: Update profile artwork
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - "profile.config.json"
+      - "scripts/generate-profile.mjs"
+      - "scripts/generate-heatmap.mjs"
+      - "package.json"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate profile and contribution map
+        env:
+          GH_USERNAME: ${{ github.repository_owner }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTPUT_PATH: dist/github-jet.svg
+        run: npm run build
+
+      - name: Commit generated SVG files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update profile artwork"
+          file_pattern: "light.svg dark.svg dist/github-jet.svg"
+

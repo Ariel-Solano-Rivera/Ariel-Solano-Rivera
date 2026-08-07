@@ -1,0 +1,16 @@
+{
+  "name": "ariel-solano-rivera-profile",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Perfil de GitHub generado desde una configuración central.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "generate:profile": "node scripts/generate-profile.mjs",
+    "generate:heatmap": "node scripts/generate-heatmap.mjs",
+    "build": "npm run generate:profile && npm run generate:heatmap"
+  }
+}
+
