@@ -6,7 +6,7 @@ Este proyecto genera automáticamente el panel profesional (`light.svg` y `dark.
 
 Edita `profile.config.json` para cambiar nombre, usuario, rol, ubicación, formación, estado, áreas de enfoque, tecnologías y contactos. Los colores principales de cada tema se controlan con `accentLight` y `accentDark`.
 
-El retrato está en `assets/pixel-avatar.png` y su ruta se define mediante la propiedad `avatar`. Puedes reemplazarlo por otro PNG cuadrado conservando el mismo nombre.
+El retrato visible está convertido a caracteres en `assets/avatar-ascii.txt`. `assets/pixel-avatar.png` se conserva como imagen fuente. Para sustituir el retrato mantén el archivo ASCII con aproximadamente 90 columnas y 56 líneas, para que permanezca dentro del panel.
 
 Mantén la estructura JSON y las comillas dobles. Si agregas tecnologías, procura usar nombres breves para conservar el diseño. Los enlaces de contacto deben incluir `https://` o `mailto:`.
 

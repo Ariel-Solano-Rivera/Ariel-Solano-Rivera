@@ -6,6 +6,17 @@
   "location": "Cuenca, Ecuador",
   "education": "Universidad Politécnica Salesiana · Computación",
   "status": "Construyendo soluciones que conectan software, datos e inteligencia artificial.",
+  "terminal": {
+    "role": "Computación · Software Dev",
+    "education": "UPS Cuenca · Computación",
+    "status": "Building • Learning • Shipping",
+    "toolchain": "VS Code, Git, Docker, Azure",
+    "languages": "Python, JavaScript, TypeScript",
+    "frontend": "React, HTML, CSS, JavaScript",
+    "backend": "Node.js, REST APIs, Java",
+    "data": "PostgreSQL, OpenCV, MLflow",
+    "focus": "Backend, IA, Computer Vision"
+  },
   "focus": [
     "Backend & APIs",
     "Inteligencia Artificial",
@@ -40,6 +51,11 @@
       "label": "EMAIL",
       "value": "arisolri1@gmail.com",
       "url": "mailto:arisolri1@gmail.com"
+    },
+    {
+      "label": "PORTFOLIO",
+      "value": "ariel-solano-30.web.app",
+      "url": "https://ariel-solano-30.web.app/"
     },
     {
       "label": "INSTAGRAM",

@@ -8,6 +8,7 @@ on:
     paths:
       - "profile.config.json"
       - "assets/pixel-avatar.png"
+      - "assets/avatar-ascii.txt"
       - "scripts/generate-profile.mjs"
       - "scripts/generate-heatmap.mjs"
       - "package.json"

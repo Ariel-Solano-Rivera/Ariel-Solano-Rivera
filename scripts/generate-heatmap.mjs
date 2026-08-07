@@ -5,31 +5,30 @@ import path from "node:path";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, "..");
 const username = process.env.GH_USERNAME || "Ariel-Solano-Rivera";
-const token = process.env.GH_TOKEN || "";
+const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || "";
 const requestedOutput = process.env.OUTPUT_PATH || "dist/github-jet.svg";
 const outputPath = path.isAbsolute(requestedOutput)
   ? requestedOutput
   : path.resolve(rootDir, requestedOutput);
 
-const WEEKS = 40;
-const DAYS = 7;
-const CELL = 15;
-const GAP = 6;
-const STEP = CELL + GAP;
-const GRID_X = 154;
-const GRID_Y = 150;
+const COLS = 40;
+const ROWS = 7;
+const CELL = 11;
+const STEP = 14;
+const GRID_X = 20;
+const GRID_Y = 16;
+const WIDTH = 600;
+const HEIGHT = 180;
+const JET_Y = 148;
+const LOOP_SECONDS = 20;
+const TARGET_COUNT = 12;
 
 function escapeXml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function isoDate(date) {
-  return date.toISOString().slice(0, 10);
+    .replaceAll('"', "&quot;");
 }
 
 function dateRange() {
@@ -39,18 +38,18 @@ function dateRange() {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
-async function fetchContributionWeeks() {
+async function fetchWeeks() {
   const { from, to } = dateRange();
   const query = `
     query Contributions($login: String!, $from: DateTime!, $to: DateTime!) {
       user(login: $login) {
         contributionsCollection(from: $from, to: $to) {
           contributionCalendar {
-            totalContributions
             weeks {
               contributionDays {
                 date
                 contributionCount
+                color
               }
             }
           }
@@ -68,21 +67,14 @@ async function fetchContributionWeeks() {
     },
     body: JSON.stringify({ query, variables: { login: username, from, to } })
   });
-
   const payload = await response.json();
   if (!response.ok || payload.errors) {
     const details = payload.errors?.map((error) => error.message).join("; ") || response.statusText;
     throw new Error(`GitHub GraphQL request failed: ${details}`);
   }
-
-  const calendar = payload.data?.user?.contributionsCollection?.contributionCalendar;
-  if (!calendar) throw new Error(`GitHub user not found: ${username}`);
-
-  return {
-    source: "GitHub GraphQL API",
-    total: calendar.totalContributions,
-    weeks: calendar.weeks.slice(-WEEKS).map((week) => week.contributionDays)
-  };
+  const weeks = payload.data?.user?.contributionsCollection?.contributionCalendar?.weeks;
+  if (!weeks) throw new Error(`GitHub user not found: ${username}`);
+  return { weeks, source: "GitHub GraphQL API" };
 }
 
 function seededRandom(seedText) {
@@ -100,199 +92,169 @@ function seededRandom(seedText) {
   };
 }
 
-function sampleContributionWeeks() {
-  const random = seededRandom(`${username}-sample-v1`);
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const lastSaturday = new Date(today);
-  lastSaturday.setUTCDate(today.getUTCDate() + (6 - today.getUTCDay()));
-  const start = new Date(lastSaturday);
-  start.setUTCDate(lastSaturday.getUTCDate() - (WEEKS * 7 - 1));
-  const weeks = [];
-  let total = 0;
+function sampleWeeks() {
+  const random = seededRandom(`${username}-terminal-map`);
+  const palette = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"];
+  const weeks = Array.from({ length: COLS }, (_, col) => ({
+    contributionDays: Array.from({ length: ROWS }, (_, row) => {
+      const active = random() > (row === 0 || row === 6 ? 0.72 : 0.5);
+      const count = active ? 1 + Math.floor(random() * 15 + Math.max(0, Math.sin(col * 0.4) * 4)) : 0;
+      const level = count === 0 ? 0 : Math.min(4, 1 + Math.floor(count / 4));
+      return {
+        date: `sample-${col}-${row}`,
+        contributionCount: count,
+        color: palette[level]
+      };
+    })
+  }));
+  return { weeks, source: "sample data" };
+}
 
-  for (let weekIndex = 0; weekIndex < WEEKS; weekIndex += 1) {
-    const days = [];
-    for (let dayIndex = 0; dayIndex < DAYS; dayIndex += 1) {
-      const date = new Date(start);
-      date.setUTCDate(start.getUTCDate() + weekIndex * 7 + dayIndex);
-      const weekendFactor = dayIndex === 0 || dayIndex === 6 ? 0.45 : 1;
-      const wave = (Math.sin(weekIndex * 0.57) + 1.2) * 1.8;
-      const active = random() < 0.64 * weekendFactor;
-      const contributionCount = date > today || !active
-        ? 0
-        : Math.max(1, Math.floor(random() * 7 + wave + (random() > 0.92 ? 8 : 0)));
-      total += contributionCount;
-      days.push({ date: isoDate(date), contributionCount });
-    }
-    weeks.push(days);
+function normalizeWeeks(rawWeeks) {
+  const recent = rawWeeks.slice(-COLS);
+  while (recent.length < COLS) {
+    recent.unshift({ contributionDays: [] });
   }
-  return { source: "sample data (local preview)", total, weeks };
-}
 
-function padWeeks(inputWeeks) {
-  const padded = inputWeeks.map((week) => [...week]);
-  while (padded.length < WEEKS) padded.unshift([]);
-  return padded.slice(-WEEKS).map((week, weekIndex) => {
-    const byDay = new Map(week.map((day) => [new Date(`${day.date}T00:00:00Z`).getUTCDay(), day]));
-    return Array.from({ length: DAYS }, (_, dayIndex) =>
-      byDay.get(dayIndex) || { date: `week-${weekIndex + 1}-day-${dayIndex + 1}`, contributionCount: 0 }
+  return recent.map((week, col) => {
+    const byDay = new Map(
+      (week.contributionDays || []).map((day) => {
+        const key = /^\d{4}-/.test(day.date)
+          ? new Date(`${day.date}T00:00:00Z`).getUTCDay()
+          : (week.contributionDays || []).indexOf(day);
+        return [key, day];
+      })
     );
-  });
+    return Array.from({ length: ROWS }, (_, row) => {
+      const day = byDay.get(row) || { contributionCount: 0, color: "#161b22", date: null };
+      return {
+        col,
+        row,
+        x: GRID_X + col * STEP,
+        y: GRID_Y + row * STEP,
+        count: day.contributionCount || 0,
+        color: day.color || "#161b22",
+        date: day.date
+      };
+    });
+  }).flat();
 }
 
-function contributionLevel(count, positiveCounts) {
-  if (count <= 0) return 0;
-  const sorted = [...positiveCounts].sort((a, b) => a - b);
-  const q = (ratio) => sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * ratio))] || 1;
-  if (count >= q(0.9)) return 4;
-  if (count >= q(0.65)) return 3;
-  if (count >= q(0.35)) return 2;
-  return 1;
+function pickTargets(cells) {
+  return [...cells]
+    .filter((cell) => cell.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, TARGET_COUNT)
+    .sort((a, b) => a.col - b.col || a.row - b.row);
+}
+
+function keyTime(col, direction) {
+  const t = 0.03 + (col / (COLS - 1)) * 0.44;
+  return direction === "forward" ? t : 1 - t;
+}
+
+function fmt(number) {
+  return Number(number.toFixed(4));
+}
+
+function renderGrid(cells, targets) {
+  const targetKeys = new Set(targets.map((cell) => `${cell.col}-${cell.row}`));
+  return cells.map((cell) => {
+    const title = cell.date
+      ? `<title>${escapeXml(cell.date)}: ${cell.count} contribuciones</title>`
+      : "";
+    const targeted = targetKeys.has(`${cell.col}-${cell.row}`);
+    return `<rect x="${cell.x}" y="${cell.y}" width="${CELL}" height="${CELL}" rx="2" fill="${cell.color}"${targeted ? ' stroke="#7ee787" stroke-width="1"' : ""}>${title}</rect>`;
+  }).join("\n");
+}
+
+function renderEffects(targets) {
+  const bullets = [];
+  const blasts = [];
+  for (const direction of ["forward", "backward"]) {
+    const ordered = direction === "forward" ? targets : [...targets].reverse();
+    for (const cell of ordered) {
+      const t = keyTime(cell.col, direction);
+      const launch = Math.max(0, t - 0.022);
+      const end = Math.min(1, t + 0.018);
+      const cx = cell.x + CELL / 2;
+      const cy = cell.y + CELL / 2;
+
+      bullets.push(`<circle cx="${cx}" cy="${JET_Y - 10}" r="2.2" fill="#7ee787">
+        <animate attributeName="cy" dur="${LOOP_SECONDS}s" repeatCount="indefinite" keyTimes="0;${fmt(launch)};${fmt(t)};1" values="${JET_Y - 10};${JET_Y - 10};${cy};${cy}"/>
+        <animate attributeName="opacity" dur="${LOOP_SECONDS}s" repeatCount="indefinite" keyTimes="0;${fmt(launch)};${fmt(t)};${fmt(end)};1" values="0;1;1;0;0"/>
+      </circle>`);
+
+      blasts.push(`<circle cx="${cx}" cy="${cy}" r="0" fill="none" stroke="#56d364" stroke-width="1.5" opacity="0">
+        <animate attributeName="r" dur="${LOOP_SECONDS}s" repeatCount="indefinite" keyTimes="0;${fmt(t)};${fmt(end)};1" values="0;1;9;9"/>
+        <animate attributeName="opacity" dur="${LOOP_SECONDS}s" repeatCount="indefinite" keyTimes="0;${fmt(t)};${fmt(end)};1" values="0;1;0;0"/>
+      </circle>`);
+    }
+  }
+  return { bullets: bullets.join("\n"), blasts: blasts.join("\n") };
+}
+
+function jetShape(className = "") {
+  return `<g class="${className}">
+    <polygon points="0,-16 8,6 4,3 -4,3 -8,6" fill="#58a6ff" stroke="#1f6feb" stroke-width="1"/>
+    <polygon points="-8,6 -14,12 -4,7" fill="#388bfd"/>
+    <polygon points="8,6 14,12 4,7" fill="#388bfd"/>
+    <circle cx="0" cy="-6" r="2.2" fill="#c9e6ff"/>
+    <polygon points="-3,7 3,7 0,15" fill="#f0883e"/>
+  </g>`;
+}
+
+function renderStars() {
+  const stars = [[8,20],[8,60],[8,100],[592,25],[592,70],[592,110],[30,172],[570,172]];
+  return stars.map(([x, y], index) =>
+    `<circle cx="${x}" cy="${y}" r="1.1" fill="#8b949e" opacity="${index % 2 ? 0.8 : 0.35}"/>`
+  ).join("\n");
 }
 
 function buildSvg(dataset) {
-  const weeks = padWeeks(dataset.weeks);
-  const allDays = weeks.flat();
-  const positiveCounts = allDays.map((day) => day.contributionCount).filter(Boolean);
-  const visibleTotal = allDays.reduce((sum, day) => sum + day.contributionCount, 0);
-  const maxCount = Math.max(0, ...positiveCounts);
-  const firstRealDate = allDays.find((day) => /^\d{4}-/.test(day.date))?.date || "—";
-  const today = isoDate(new Date());
-  const lastRealDate = [...allDays].reverse().find((day) => /^\d{4}-/.test(day.date) && day.date <= today)?.date || "—";
-  const palette = ["#132333", "#123f4c", "#087f8c", "#10b9b0", "#67f5d2"];
-  const cells = [];
-  const highlights = [];
-
-  for (let weekIndex = 0; weekIndex < WEEKS; weekIndex += 1) {
-    for (let dayIndex = 0; dayIndex < DAYS; dayIndex += 1) {
-      const day = weeks[weekIndex][dayIndex];
-      const x = GRID_X + weekIndex * STEP;
-      const y = GRID_Y + dayIndex * STEP;
-      const level = contributionLevel(day.contributionCount, positiveCounts);
-      const opacity = level === 0 ? 0.68 : 1;
-      cells.push(`<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="3" fill="${palette[level]}" opacity="${opacity}">
-        <title>${escapeXml(day.date)}: ${day.contributionCount} contribuciones</title>
-      </rect>`);
-      if (day.contributionCount === maxCount && maxCount > 0) {
-        highlights.push(`<rect x="${x - 3}" y="${y - 3}" width="${CELL + 6}" height="${CELL + 6}" rx="6" class="hotspot" fill="none" stroke="#f7d154" stroke-width="2"/>`);
-      }
-    }
-  }
-
-  const monthLabels = [];
-  let previousMonth = "";
-  weeks.forEach((week, index) => {
-    const validDay = week.find((day) => /^\d{4}-/.test(day.date));
-    if (!validDay) return;
-    const date = new Date(`${validDay.date}T00:00:00Z`);
-    const month = new Intl.DateTimeFormat("es", { month: "short", timeZone: "UTC" }).format(date).replace(".", "").toUpperCase();
-    if (month !== previousMonth && (index === 0 || index % 3 === 0)) {
-      monthLabels.push(`<text x="${GRID_X + index * STEP}" y="133" class="month">${escapeXml(month)}</text>`);
-      previousMonth = month;
-    }
-  });
+  const cells = normalizeWeeks(dataset.weeks);
+  const targets = pickTargets(cells);
+  const effects = renderEffects(targets);
+  const total = cells.reduce((sum, cell) => sum + cell.count, 0);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="430" viewBox="0 0 1180 430" role="img" aria-labelledby="title desc">
-  <title id="title">Mapa de contribuciones de ${escapeXml(username)}</title>
-  <desc id="desc">Aproximadamente cuarenta semanas de contribuciones de GitHub con un dron animado.</desc>
-  <defs>
-    <linearGradient id="heatBg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#07111c"/>
-      <stop offset="0.55" stop-color="#0b1d2b"/>
-      <stop offset="1" stop-color="#071722"/>
-    </linearGradient>
-    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#67f5d2" stop-opacity="0.36"/>
-      <stop offset="1" stop-color="#67f5d2" stop-opacity="0"/>
-    </linearGradient>
-    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
-      <path d="M24 0H0V24" fill="none" stroke="#173248" stroke-width="1" opacity="0.34"/>
-    </pattern>
-    <filter id="droneGlow" x="-100%" y="-100%" width="300%" height="300%">
-      <feGaussianBlur stdDeviation="4" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img" aria-labelledby="title desc">
+  <title id="title">Mapa animado de contribuciones de ${escapeXml(username)}</title>
+  <desc id="desc">${COLS} semanas de actividad con una nave animada. Total visible: ${total} contribuciones. Fuente: ${escapeXml(dataset.source)}.</desc>
   <style>
-    text { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
-    .eyebrow { fill: #67f5d2; font-size: 12px; font-weight: 700; letter-spacing: 2px; }
-    .heading { fill: #edfaff; font-size: 24px; font-weight: 800; }
-    .meta { fill: #83a5bb; font-size: 12px; }
-    .month { fill: #83a5bb; font-size: 10px; font-weight: 700; }
-    .day { fill: #83a5bb; font-size: 10px; }
-    .stat { fill: #edfaff; font-size: 13px; font-weight: 700; }
-    .flight { animation: fly 10s cubic-bezier(.45,0,.55,1) infinite; }
-    .rotor { animation: rotor .18s linear infinite; transform-box: fill-box; transform-origin: center; }
-    .hotspot { animation: hotspot 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-    .signal { animation: signal 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-    @keyframes fly {
-      0% { transform: translate(116px, 112px); opacity: 0; }
-      8% { opacity: 1; }
-      25% { transform: translate(330px, 125px); }
-      50% { transform: translate(555px, 105px); }
-      75% { transform: translate(785px, 122px); }
-      92% { opacity: 1; }
-      100% { transform: translate(1016px, 110px); opacity: 0; }
+    .movingJet { animation: jetTravel ${LOOP_SECONDS}s linear infinite; }
+    .staticJet { display: none; }
+    @keyframes jetTravel {
+      0% { transform: translate(35px, ${JET_Y}px); }
+      50% { transform: translate(565px, ${JET_Y}px); }
+      100% { transform: translate(35px, ${JET_Y}px); }
     }
-    @keyframes rotor { to { transform: rotate(360deg); } }
-    @keyframes hotspot { 50% { opacity: .35; transform: scale(1.25); } }
-    @keyframes signal { from { opacity: .7; transform: scale(.3); } to { opacity: 0; transform: scale(1.5); } }
     @media (prefers-reduced-motion: reduce) {
-      .flight, .rotor, .hotspot, .signal { animation: none !important; }
-      .flight { transform: translate(555px, 105px); opacity: 1; }
-      .signal { display: none; }
+      .animatedEffects, .movingJet { display: none; }
+      .staticJet { display: inline; transform: translate(300px, ${JET_Y}px); }
     }
   </style>
-
-  <rect width="1180" height="430" rx="28" fill="url(#heatBg)"/>
-  <rect width="1180" height="430" rx="28" fill="url(#grid)"/>
-  <path d="M28 88 H1152" stroke="#23445b"/>
-  <path d="M28 352 H1152" stroke="#23445b"/>
-  <path d="M28 28 H110 V31 H31 V108 H28Z" fill="#22d3ee"/>
-  <path d="M1152 402 H1070 V399 H1149 V322 H1152Z" fill="#22d3ee"/>
-
-  <text x="45" y="49" class="eyebrow">FLIGHT LOG // CONTRIBUTIONS</text>
-  <text x="45" y="75" class="heading">GITHUB ACTIVITY RADAR</text>
-  <text x="1135" y="48" text-anchor="end" class="meta">@${escapeXml(username)}</text>
-  <text x="1135" y="69" text-anchor="end" class="meta">${escapeXml(firstRealDate)} → ${escapeXml(lastRealDate)}</text>
-
-  ${monthLabels.join("\n  ")}
-  <text x="117" y="161" class="day">SUN</text>
-  <text x="117" y="203" class="day">TUE</text>
-  <text x="117" y="245" class="day">THU</text>
-  <text x="117" y="287" class="day">SAT</text>
-  <g>${cells.join("\n")}</g>
-  <g>${highlights.join("\n")}</g>
-
-  <g class="flight" filter="url(#droneGlow)">
-    <path d="M0 16 L0 54 L46 54 L46 16 Z" fill="url(#beam)"/>
-    <ellipse class="signal" cx="23" cy="12" rx="18" ry="7" fill="none" stroke="#67f5d2"/>
-    <path d="M9 5 H37 L43 13 L34 20 H12 L3 13Z" fill="#0d2735" stroke="#67f5d2" stroke-width="2"/>
-    <path d="M13 10 H33 L29 16 H17Z" fill="#22d3ee"/>
-    <circle class="rotor" cx="4" cy="7" r="6" fill="none" stroke="#f7d154" stroke-width="2" stroke-dasharray="4 3"/>
-    <circle class="rotor" cx="42" cy="7" r="6" fill="none" stroke="#f7d154" stroke-width="2" stroke-dasharray="4 3"/>
-    <circle cx="23" cy="13" r="2.5" fill="#f7d154"/>
-  </g>
-
-  <g transform="translate(45 376)">
-    <text y="17" class="meta">TOTAL / 40 WEEKS</text>
-    <text x="148" y="17" class="stat">${visibleTotal.toLocaleString("es-EC")}</text>
-    <text x="250" y="17" class="meta">PEAK DAY</text>
-    <text x="329" y="17" class="stat">${maxCount}</text>
-    <text x="405" y="17" class="meta">SOURCE</text>
-    <text x="465" y="17" class="stat">${escapeXml(dataset.source)}</text>
-  </g>
-  <g transform="translate(938 376)">
-    <text y="17" class="meta">LESS</text>
-    ${palette.map((color, index) => `<rect x="${40 + index * 24}" y="3" width="15" height="15" rx="3" fill="${color}"/>`).join("")}
-    <text x="168" y="17" class="meta">MORE</text>
-  </g>
+  <rect width="${WIDTH}" height="${HEIGHT}" rx="12" fill="#0d1117"/>
+  ${renderStars()}
+  <g id="grid">${renderGrid(cells, targets)}</g>
+  <g class="animatedEffects">${effects.bullets}${effects.blasts}</g>
+  ${jetShape("movingJet")}
+  ${jetShape("staticJet")}
 </svg>`;
 }
 
-const dataset = token ? await fetchContributionWeeks() : sampleContributionWeeks();
+let dataset;
+if (token) {
+  try {
+    dataset = await fetchWeeks();
+  } catch (error) {
+    console.warn(`GitHub API unavailable (${error.message}); using sample data.`);
+    dataset = sampleWeeks();
+  }
+} else {
+  dataset = sampleWeeks();
+}
+
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, buildSvg(dataset), "utf8");
 console.log(`Generated ${path.relative(rootDir, outputPath)} using ${dataset.source}`);

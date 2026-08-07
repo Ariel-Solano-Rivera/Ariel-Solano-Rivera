@@ -4,51 +4,48 @@ import path from "node:path";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, "..");
-const configPath = path.join(rootDir, "profile.config.json");
-const config = JSON.parse(await readFile(configPath, "utf8"));
-const avatarPath = path.resolve(rootDir, config.avatar);
-const avatarExtension = path.extname(avatarPath).toLowerCase();
-const avatarMime = avatarExtension === ".webp" ? "image/webp" : "image/png";
-const avatarDataUri = `data:${avatarMime};base64,${(await readFile(avatarPath)).toString("base64")}`;
+const config = JSON.parse(await readFile(path.join(rootDir, "profile.config.json"), "utf8"));
+const asciiPortrait = (await readFile(path.resolve(rootDir, "assets/avatar-ascii.txt"), "utf8"))
+  .replace(/\r/g, "")
+  .split("\n")
+  .filter((line) => line.length > 0);
 
 const WIDTH = 1180;
-const HEIGHT = 1140;
+const HEIGHT = 610;
 
 const themes = {
   light: {
-    bg: "#eaf3f9",
-    panel: "#ffffff",
-    panelAlt: "#f2f8fc",
-    text: "#10243a",
-    muted: "#4d667a",
-    border: "#afc9db",
-    grid: "#c3d9e7",
-    shadow: "#7694aa",
-    terminal: "#e8f3f9",
-    terminalText: "#173c55",
-    dotRed: "#ff6b6b",
-    dotYellow: "#f7c948",
-    dotGreen: "#43c59e"
+    backgroundStart: "#f8fbff",
+    backgroundEnd: "#e8f0f8",
+    chrome: "#ffffff",
+    panel: "#f7fbff",
+    panelOpacity: 0.7,
+    text: "#172033",
+    value: "#243047",
+    muted: "#8290a6",
+    scanline: "#38bdf8",
+    shadow: "#7d91a8"
   },
   dark: {
-    bg: "#050b14",
-    panel: "#0b1725",
-    panelAlt: "#10263a",
-    text: "#f1f7ff",
-    muted: "#91a9bc",
-    border: "#28506a",
-    grid: "#173a50",
-    shadow: "#00040a",
-    terminal: "#08131f",
-    terminalText: "#bcecff",
-    dotRed: "#ff6b6b",
-    dotYellow: "#f7c948",
-    dotGreen: "#43c59e"
+    backgroundStart: "#0b1120",
+    backgroundEnd: "#050816",
+    chrome: "#0b1120",
+    panel: "#0b1120",
+    panelOpacity: 0.35,
+    text: "#dbeafe",
+    value: "#e5e7eb",
+    muted: "#64748b",
+    scanline: "#7dd3fc",
+    shadow: "#00040c"
   }
 };
 
+const cyan = config.accentDark || config.accent || "#22d3ee";
+const violet = "#7c3aed";
+const green = "#10b981";
+
 function escapeXml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -56,227 +53,193 @@ function escapeXml(value) {
     .replaceAll("'", "&apos;");
 }
 
-function wrapText(text, maxChars) {
-  const words = String(text).split(/\s+/);
-  const lines = [];
-  let current = "";
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length > maxChars && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = candidate;
+function techItems(match) {
+  const group = config.technologies.find((item) =>
+    item.category.toLowerCase().includes(match.toLowerCase())
+  );
+  return group?.items?.join(", ") || "—";
+}
+
+function contact(label) {
+  return config.contacts.find((item) => item.label === label)?.value || "—";
+}
+
+function compact(value, max = 42) {
+  const text = String(value);
+  return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
+}
+
+const infoRows = [
+  { type: "head", value: `${config.username.toLowerCase()}@devos` },
+  { key: "Subject", value: config.name },
+  { key: "Role", value: config.terminal?.role || compact(config.role, 30) },
+  { key: "Origin", value: config.location },
+  { key: "Education", value: config.terminal?.education || compact(config.education, 30) },
+  { key: "Status", value: config.terminal?.status || compact(config.status, 30) },
+  { key: "ToolChain", value: config.terminal?.toolchain || compact(techItems("TOOLS"), 30) },
+  { type: "spacer" },
+  { key: "Core.Lang", value: config.terminal?.languages || compact(techItems("LANGUAGES"), 30) },
+  { key: "Core.Frontend", value: config.terminal?.frontend || compact(techItems("WEB"), 30) },
+  { key: "Core.Backend", value: config.terminal?.backend || "Node.js, REST APIs, Java" },
+  { key: "Core.Data", value: config.terminal?.data || compact(techItems("DATA"), 30) },
+  { key: "Core.Focus", value: config.terminal?.focus || compact(config.focus.join(", "), 30) },
+  { type: "spacer" },
+  { type: "section", value: "- Contact" },
+  { key: "Grid.Mail", value: contact("EMAIL") },
+  { key: "Grid.Portfolio", value: contact("PORTFOLIO") },
+  { key: "Grid.Instagram", value: contact("INSTAGRAM") },
+  { key: "Grid.Github", value: config.username },
+  { type: "spacer" },
+  { type: "section", value: "- Live Stats" },
+  { type: "value", value: "Contribution radar synchronized below ↓" }
+];
+
+function renderAscii() {
+  const startY = 69;
+  const lineHeight = 7.35;
+  return asciiPortrait.slice(0, 56).map((line, index) =>
+    `<tspan x="30" y="${(startY + index * lineHeight).toFixed(2)}" xml:space="preserve">${escapeXml(line)}</tspan>`
+  ).join("\n");
+}
+
+function renderInfoRows() {
+  return infoRows.map((row, index) => {
+    const y = 42 + index * 22;
+    const delay = (0.65 + index * 0.105).toFixed(2);
+    const style = `style="animation-delay: ${delay}s"`;
+
+    if (row.type === "spacer") {
+      return `<g class="infoLine" ${style}><text x="520" y="${y}" class="leaders">·</text></g>`;
     }
-  }
-  if (current) lines.push(current);
-  return lines;
-}
-
-function renderTextLines(lines, x, y, lineHeight, className, extra = "") {
-  return `<text x="${x}" y="${y}" class="${className}" ${extra}>${lines
-    .map((line, index) => `<tspan x="${x}" dy="${index === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`)
-    .join("")}</text>`;
-}
-
-function renderPills(items, x, y, maxWidth, accent) {
-  const rows = [];
-  let cursorX = x;
-  let cursorY = y;
-  for (const item of items) {
-    const label = String(item);
-    const width = Math.max(78, label.length * 9.2 + 32);
-    if (cursorX + width > x + maxWidth) {
-      cursorX = x;
-      cursorY += 39;
+    if (row.type === "head") {
+      return `<g class="infoLine" ${style}>
+        <text x="520" y="${y}" class="head">${escapeXml(row.value)}<tspan class="leaders"> ─────────────────────────────</tspan></text>
+      </g>`;
     }
-    rows.push(`<g transform="translate(${cursorX} ${cursorY})">
-      <rect width="${width.toFixed(1)}" height="30" rx="15" class="pill"/>
-      <circle cx="15" cy="15" r="3.5" fill="${accent}"/>
-      <text x="27" y="20" class="pillText">${escapeXml(label)}</text>
-    </g>`);
-    cursorX += width + 10;
-  }
-  return rows.join("\n");
-}
+    if (row.type === "section") {
+      return `<g class="infoLine" ${style}>
+        <text x="520" y="${y}" class="section">${escapeXml(row.value)}<tspan class="leaders"> ───────────────────────────────────</tspan></text>
+      </g>`;
+    }
+    if (row.type === "value") {
+      return `<g class="infoLine" ${style}><text x="520" y="${y}" class="value">·  ${escapeXml(row.value)}</text></g>`;
+    }
 
-function renderTechnologyPanels(accent) {
-  return config.technologies.slice(0, 4).map((group, index) => {
-    const col = index % 2;
-    const row = Math.floor(index / 2);
-    const x = 66 + col * 528;
-    const y = 675 + row * 145;
-    return `<g transform="translate(${x} ${y})">
-      <rect width="520" height="126" rx="16" class="subpanel"/>
-      <path d="M20 39 H500" class="hairline"/>
-      <text x="260" y="26" text-anchor="middle" class="eyebrow">// ${escapeXml(group.category)}</text>
-      ${renderPills(group.items, 20, 52, 480, accent)}
+    const displayValue = compact(row.value, 30);
+    return `<g class="infoLine" ${style}>
+      <text x="520" y="${y}">
+        <tspan x="520" class="leaders">·</tspan>
+        <tspan x="540" class="key">${escapeXml(row.key)}</tspan>
+        <tspan x="680" class="leaders">: ..................</tspan>
+        <tspan x="870" class="value">${escapeXml(displayValue)}</tspan>
+      </text>
     </g>`;
-  }).join("\n");
-}
-
-function renderContacts(accent) {
-  const contacts = config.contacts.slice(0, 3);
-  return contacts.map((contact, index) => {
-    const x = 66 + index * 356;
-    return `<a href="${escapeXml(contact.url)}" target="_blank">
-      <g transform="translate(${x} 1010)" class="contact">
-        <rect width="336" height="76" rx="14" class="contactBg"/>
-        <path d="M0 14 V0 H14 M322 0 H336 V14 M336 62 V76 H322 M14 76 H0 V62" fill="none" stroke="${accent}" stroke-width="2"/>
-        <circle cx="24" cy="38" r="8" fill="none" stroke="${accent}" stroke-width="2"/>
-        <circle cx="24" cy="38" r="3" fill="${accent}"/>
-        <text x="168" y="29" text-anchor="middle" class="contactLabel">${escapeXml(contact.label)}</text>
-        <text x="168" y="53" text-anchor="middle" class="contactValue">${escapeXml(contact.value)}</text>
-      </g>
-    </a>`;
   }).join("\n");
 }
 
 function buildSvg(mode) {
   const theme = themes[mode];
-  const accent = mode === "light"
-    ? (config.accentLight || config.accent || "#087ea4")
-    : (config.accentDark || config.accent || "#2dd4e8");
-  const statusLines = wrapText(config.status, 46).slice(0, 3);
-  const focusRows = config.focus.slice(0, 4).map((item, index) => {
-    const x = 492 + (index % 2) * 310;
-    const y = 544 + Math.floor(index / 2) * 40;
-    return `<g transform="translate(${x} ${y})">
-      <path d="M0 10 h12" stroke="${accent}" stroke-width="2"/>
-      <circle cx="5" cy="10" r="3" fill="${theme.panel}" stroke="${accent}" stroke-width="2"/>
-      <text x="22" y="15" class="focus">${escapeXml(item)}</text>
-    </g>`;
-  }).join("\n");
-
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img" aria-labelledby="title desc">
-  <title id="title">Perfil profesional de ${escapeXml(config.name)}</title>
-  <desc id="desc">Panel futurista tipo terminal con retrato pixel-art, perfil, tecnologías y contactos.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img" aria-labelledby="title desc">
+  <title id="title">Perfil terminal de ${escapeXml(config.name)}</title>
+  <desc id="desc">Interfaz de terminal con retrato ASCII, información profesional y contactos.</desc>
   <defs>
-    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="${theme.bg}"/>
-      <stop offset="0.58" stop-color="${theme.panelAlt}"/>
-      <stop offset="1" stop-color="${theme.bg}"/>
+    <linearGradient id="asciiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${cyan}"/>
+      <stop offset="55%" stop-color="${mode === "dark" ? "#60a5fa" : "#2563eb"}"/>
+      <stop offset="100%" stop-color="${violet}"/>
     </linearGradient>
-    <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="${accent}" stop-opacity="0"/>
-      <stop offset="0.5" stop-color="${accent}"/>
-      <stop offset="1" stop-color="${accent}" stop-opacity="0"/>
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${violet}"/>
+      <stop offset="50%" stop-color="${cyan}"/>
+      <stop offset="100%" stop-color="${green}"/>
     </linearGradient>
-    <pattern id="microgrid" width="28" height="28" patternUnits="userSpaceOnUse">
-      <path d="M28 0H0V28" fill="none" stroke="${theme.grid}" stroke-width="1" opacity="0.42"/>
+    <radialGradient id="bgGlow" cx="30%" cy="20%" r="85%">
+      <stop offset="0%" stop-color="${theme.backgroundStart}"/>
+      <stop offset="100%" stop-color="${theme.backgroundEnd}"/>
+    </radialGradient>
+    <linearGradient id="scanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${cyan}" stop-opacity="0"/>
+      <stop offset="45%" stop-color="${cyan}" stop-opacity="0.04"/>
+      <stop offset="50%" stop-color="${mode === "dark" ? "#a5f3fc" : "#0891b2"}" stop-opacity="0.7"/>
+      <stop offset="55%" stop-color="${cyan}" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="${violet}" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1" fill="${theme.scanline}" opacity="0.055"/>
     </pattern>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="${theme.shadow}" flood-opacity="0.28"/>
+    <filter id="frameShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="${theme.shadow}" flood-opacity="0.22"/>
     </filter>
-    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <clipPath id="terminalClip"><rect x="42" y="42" width="1096" height="1056" rx="24"/></clipPath>
-    <clipPath id="avatarClip"><rect x="82" y="168" width="338" height="338" rx="16"/></clipPath>
+    <mask id="portraitReveal">
+      <rect x="0" y="0" width="488" height="468" fill="white" class="revealRect"/>
+    </mask>
   </defs>
   <style>
-    text { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
-    .frame { fill: ${theme.panel}; stroke: ${theme.border}; stroke-width: 1.5; }
-    .terminalBar { fill: ${theme.terminal}; }
-    .titlebar { fill: ${theme.muted}; font-size: 13px; letter-spacing: 1.35px; }
-    .kicker { fill: ${accent}; font-size: 14px; font-weight: 800; letter-spacing: 2.8px; }
-    .name { fill: ${theme.text}; font-size: 47px; font-weight: 800; letter-spacing: -1.5px; }
-    .role { fill: ${theme.muted}; font-size: 18.5px; font-weight: 650; }
-    .prompt { fill: ${accent}; font-size: 16px; font-weight: 800; }
-    .status { fill: ${theme.text}; font-size: 17px; font-weight: 500; }
-    .metaLabel { fill: ${theme.muted}; font-size: 12px; font-weight: 800; letter-spacing: 1.7px; }
-    .metaValue { fill: ${theme.text}; font-size: 15.5px; font-weight: 700; }
-    .avatarLabel { fill: ${accent}; font-size: 12px; font-weight: 800; letter-spacing: 2.1px; }
-    .eyebrow { fill: ${accent}; font-size: 12.5px; font-weight: 800; letter-spacing: 1.8px; }
-    .sectionTitle { fill: ${theme.text}; font-size: 24px; font-weight: 800; letter-spacing: .6px; }
-    .focus { fill: ${theme.text}; font-size: 15.5px; font-weight: 700; }
-    .subpanel { fill: ${theme.panelAlt}; stroke: ${theme.border}; stroke-width: 1.25; }
-    .hairline { fill: none; stroke: ${theme.border}; stroke-width: 1; }
-    .pill { fill: ${theme.panel}; stroke: ${theme.border}; stroke-width: 1; }
-    .pillText { fill: ${theme.text}; font-size: 13px; font-weight: 700; }
-    .contactBg { fill: ${theme.panelAlt}; stroke: ${theme.border}; stroke-width: 1.25; transition: fill .2s ease; }
-    .contactLabel { fill: ${accent}; font-size: 11.5px; font-weight: 800; letter-spacing: 1.6px; }
-    .contactValue { fill: ${theme.text}; font-size: 14px; font-weight: 700; }
-    .contact:hover .contactBg { fill: ${theme.terminal}; }
-    .cursor { animation: blink 1.1s steps(1) infinite; }
-    .scan { animation: scan 7s linear infinite; }
-    .pulse { animation: pulse 2.8s ease-in-out infinite; transform-origin: 437px 432px; }
-    @keyframes blink { 50% { opacity: 0; } }
-    @keyframes scan { from { transform: translateY(-40px); } to { transform: translateY(1080px); } }
-    @keyframes pulse { 50% { opacity: .45; } }
+    text, tspan { white-space: pre; font-family: "Courier New", Consolas, monospace; }
+    .ascii { font-size: 7.4px; fill: url(#asciiGrad); letter-spacing: -0.2px; font-weight: 700; }
+    .key { font-size: 15px; fill: ${cyan}; font-weight: 700; }
+    .value { font-size: 15px; fill: ${theme.value}; }
+    .leaders { font-size: 15px; fill: ${theme.muted}; }
+    .head { font-size: 17px; fill: ${violet}; font-weight: 700; }
+    .section { font-size: 15px; fill: ${green}; font-weight: 700; }
+    .termLabel { font-size: 12px; fill: ${theme.muted}; letter-spacing: .5px; }
+    .scanLabel { font-size: 10px; fill: #f87171; letter-spacing: 1px; }
+    .panelTitle { font-size: 11px; fill: ${mode === "dark" ? "#38bdf8" : "#0284c7"}; letter-spacing: 2px; opacity: .78; }
+    .infoLine { opacity: 0; transform: translateX(-10px); animation: lineIn .38s ease forwards; }
+    .revealRect { transform-box: fill-box; transform-origin: top; transform: scaleY(0); animation: reveal 2.6s .2s cubic-bezier(.25,.1,.25,1) forwards; }
+    .scanBeam { animation: scan 4.2s linear infinite; mix-blend-mode: screen; }
+    .frameBorder { animation: borderPulse 3.2s ease-in-out infinite; }
+    .statusDot { animation: blink 1.1s ease-in-out infinite; }
+    .cursor { animation: blink 1.1s steps(1) 3.3s infinite; }
+    @keyframes lineIn { to { opacity: 1; transform: translateX(0); } }
+    @keyframes reveal { to { transform: scaleY(1); } }
+    @keyframes scan { from { transform: translateY(-70px); } to { transform: translateY(680px); } }
+    @keyframes borderPulse { 50% { opacity: .52; } }
+    @keyframes blink { 50% { opacity: .18; } }
     @media (prefers-reduced-motion: reduce) {
-      .cursor, .scan, .pulse { animation: none !important; }
-      .scan { display: none; }
+      .infoLine, .revealRect, .scanBeam, .frameBorder, .statusDot, .cursor { animation: none !important; }
+      .infoLine { opacity: 1; transform: none; }
+      .revealRect { transform: scaleY(1); }
+      .scanBeam { display: none; }
     }
   </style>
 
-  <rect width="1180" height="1140" rx="30" fill="url(#background)"/>
-  <rect width="1180" height="1140" rx="30" fill="url(#microgrid)" opacity="0.38"/>
-  <path d="M0 160 H1180 M0 970 H1180" stroke="${accent}" stroke-opacity="0.09"/>
-  <g filter="url(#shadow)">
-    <rect x="42" y="42" width="1096" height="1056" rx="24" class="frame"/>
-    <path d="M66 42 H1114 Q1138 42 1138 66 V94 H42 V66 Q42 42 66 42Z" class="terminalBar"/>
-  </g>
-  <g clip-path="url(#terminalClip)">
-    <rect x="42" y="94" width="1096" height="2" fill="url(#accentLine)"/>
-    <rect class="scan" x="42" y="94" width="1096" height="2" fill="url(#accentLine)" opacity="0.33"/>
-  </g>
+  <rect width="1180" height="610" rx="18" fill="url(#bgGlow)"/>
+  <rect width="1180" height="610" rx="18" fill="url(#scanlines)"/>
 
-  <circle cx="69" cy="68" r="6" fill="${theme.dotRed}"/>
-  <circle cx="89" cy="68" r="6" fill="${theme.dotYellow}"/>
-  <circle cx="109" cy="68" r="6" fill="${theme.dotGreen}"/>
-  <text x="590" y="72" text-anchor="middle" class="titlebar">ARIEL://PROFILE — ${mode.toUpperCase()} MODE</text>
-  <text x="1107" y="72" text-anchor="end" class="titlebar">NODE 20 · ONLINE</text>
-
-  <g>
-    <rect x="66" y="122" width="370" height="450" rx="20" fill="${theme.terminal}" stroke="${theme.border}" stroke-width="1.25"/>
-    <path d="M86 153 H416" stroke="${theme.border}"/>
-    <circle cx="96" cy="141" r="3.5" fill="${accent}" class="pulse"/>
-    <text x="251" y="145" text-anchor="middle" class="avatarLabel">PORTRAIT.PX / IDENTITY</text>
-    <image href="${avatarDataUri}" x="82" y="168" width="338" height="338" preserveAspectRatio="xMidYMid slice" clip-path="url(#avatarClip)"/>
-    <rect x="82" y="168" width="338" height="338" rx="16" fill="none" stroke="${accent}" stroke-opacity="0.72"/>
-    <path d="M82 192 V168 H106 M396 168 H420 V192 M420 482 V506 H396 M106 506 H82 V482" fill="none" stroke="${accent}" stroke-width="3"/>
-    <text x="251" y="545" text-anchor="middle" class="titlebar">PIXEL_RENDER // SIGNAL LOCKED</text>
+  <g id="titlebar">
+    <rect x="3" y="3" width="1174" height="34" rx="16" fill="${theme.chrome}" fill-opacity=".9"/>
+    <circle cx="24" cy="20" r="5" fill="#ef4444"/>
+    <circle cx="42" cy="20" r="5" fill="#f59e0b"/>
+    <circle cx="60" cy="20" r="5" fill="#10b981"/>
+    <text x="590" y="25" text-anchor="middle" class="termLabel">${escapeXml(config.username.toLowerCase())}@devos ~ % ./profile.sh --live</text>
+    <circle cx="1108" cy="20" r="4" fill="#f87171" class="statusDot"/>
+    <text x="1118" y="24" class="scanLabel">SCANNING</text>
   </g>
 
-  <g>
-    <text x="794" y="145" text-anchor="middle" class="kicker">HELLO_WORLD.EXE</text>
-    <text x="794" y="198" text-anchor="middle" class="name">${escapeXml(config.name)}</text>
-    <text x="794" y="236" text-anchor="middle" class="role">${escapeXml(config.role)}</text>
-    <path d="M474 262 H1114" stroke="url(#accentLine)" stroke-width="2"/>
-    <text x="794" y="302" text-anchor="middle" class="prompt">$ whoami <tspan class="cursor">█</tspan></text>
-    ${renderTextLines(statusLines, 794, 337, 26, "status", 'text-anchor="middle"')}
+  <g transform="translate(0 38)">
+    <rect x="14" y="26" width="488" height="468" rx="14" fill="${theme.panel}" fill-opacity="${theme.panelOpacity}" stroke="url(#borderGrad)" stroke-width="1" opacity=".55"/>
+    <rect x="508" y="10" width="655" height="500" rx="14" fill="${theme.panel}" fill-opacity="${theme.panelOpacity}" stroke="url(#borderGrad)" stroke-width="1" opacity=".55"/>
+    <text x="30" y="24" class="panelTitle">VISUAL.MAP</text>
+    <text x="524" y="24" class="panelTitle">SYSTEM.INFO</text>
 
-    <g transform="translate(474 414)">
-      <rect width="310" height="76" rx="13" class="subpanel"/>
-      <text x="155" y="27" text-anchor="middle" class="metaLabel">LOCATION</text>
-      <text x="155" y="54" text-anchor="middle" class="metaValue">${escapeXml(config.location)}</text>
+    <g mask="url(#portraitReveal)">
+      <text x="30" y="0" class="ascii">${renderAscii()}</text>
     </g>
-    <g transform="translate(804 414)">
-      <rect width="310" height="76" rx="13" class="subpanel"/>
-      <text x="155" y="25" text-anchor="middle" class="metaLabel">EDUCATION</text>
-      ${renderTextLines(wrapText(config.education, 31).slice(0, 2), 155, 49, 18, "metaValue", 'text-anchor="middle"')}
-    </g>
-    <text x="794" y="522" text-anchor="middle" class="eyebrow">CURRENT_FOCUS[]</text>
-    ${focusRows}
+
+    ${renderInfoRows()}
+
+    <rect x="522" y="485" width="9" height="16" fill="${cyan}" class="cursor"/>
   </g>
 
-  <path d="M66 622 H1114" stroke="${theme.border}"/>
-  <rect x="530" y="620" width="120" height="4" rx="2" fill="${accent}"/>
-  <text x="590" y="655" text-anchor="middle" class="sectionTitle">TECH STACK // TOOLKIT</text>
-  ${renderTechnologyPanels(accent)}
-
-  <path d="M66 972 H1114" stroke="${theme.border}"/>
-  <text x="590" y="997" text-anchor="middle" class="eyebrow">OPEN_CHANNELS</text>
-  ${renderContacts(accent)}
-  <text x="1114" y="1122" text-anchor="end" class="titlebar">CONFIG-DRIVEN · SVG/1.1 · ${escapeXml(config.username)}</text>
+  <rect x="0" y="-70" width="1180" height="70" fill="url(#scanGrad)" opacity=".72" class="scanBeam"/>
+  <rect x="3" y="3" width="1174" height="604" rx="16" fill="none" stroke="url(#borderGrad)" stroke-width="2" opacity=".88" class="frameBorder" filter="url(#frameShadow)"/>
 </svg>`;
 }
 
-for (const mode of Object.keys(themes)) {
-  const outputPath = path.join(rootDir, `${mode}.svg`);
-  await writeFile(outputPath, buildSvg(mode), "utf8");
-  console.log(`Generated ${path.relative(rootDir, outputPath)}`);
+for (const mode of ["light", "dark"]) {
+  const output = path.join(rootDir, `${mode}.svg`);
+  await writeFile(output, buildSvg(mode), "utf8");
+  console.log(`Generated ${path.relative(rootDir, output)}`);
 }
